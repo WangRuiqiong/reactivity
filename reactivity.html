@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>reactivity</title>
+    <style>
+        html,body{
+            user-select:none;
+        }
+
+        div.container{
+            border:1px solid #000;
+            width:1000px;
+            height:500px;
+            margin:0 auto;
+        }
+
+        div.butCase,div.btn{
+            width:650px;
+            height:50px;
+            border:1px solid #000;
+        }
+
+        div.btnTo{
+            position:relative;
+            margin:0 auto;
+        }
+
+        div.butCase{
+            bottom:1px;
+            overflow:hidden;
+            position:absolute;
+            top:8px;
+            transition:box-shadow .5s linear;
+        }
+
+        div.btn{
+            border:1px solid #000;
+            position:absolute;
+            width:600px;
+            height:0;
+            overflow:hidden;
+            transition:all .5s linear;
+        }
+
+        div.show{
+            height:50px;
+        }
+
+        div.btnTo{
+            width:500px;
+            height:50px;
+            display:flex;
+            top:449px;
+        }
+
+        div.btns{
+            border:1px solid #000;
+            width:71px;
+            height:50px;
+        }
+
+        div.btns,div.btn{
+            text-align:center;
+            line-height:50px;
+            cursor:pointer;
+        }
+
+        div#arrowhead{
+            width:50px;
+            height:50px;
+            border:1px solid #000;
+            position:absolute;
+            right:-2px;
+            background:url("arrowRight.png");
+            cursor:pointer;
+        }
+
+        div.hidden{
+            width:50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="butCase">
+            <div class="btn show" id="window">窗口</div>
+            <div class="btn" id="function">功能</div>
+            <div class="btn" id="check">审阅</div>
+            <div class="btn" id="avatar">阿凡达</div>
+            <div class="btn" id="steering">方向盘</div>
+            <div class="btn" id="angle">角度</div>
+            <div class="btn" id="effect">效果</div>
+            <div id="arrowhead" title="长按拖拽"></div>
+        </div>
+
+        <div class="btnTo">
+            <div class="btns window">窗口</div>
+            <div class="btns function">功能</div>
+            <div class="btns check">审阅</div>
+            <div class="btns avatar">阿凡达</div>
+            <div class="btns steering">方向盘</div>
+            <div class="btns angle">角度</div>
+            <div class="btns effect">效果</div>
+        </div>
+    </div>
+
+    <script>
+        (()=>{
+            //设置可移动菜单的位置
+            let bodyW = document.documentElement.clientWidth;
+            let el = document.getElementsByClassName("butCase")[0];
+            el.style.left = (bodyW - el.offsetWidth) / 2+"px";
+            
+            //实现按钮切换菜单功能
+            document.getElementsByClassName("btnTo")[0].onclick = (e)=>{
+                //设置公共方法
+                function show(elemNodeId){
+                    //获取操作元素
+                    let nowElem = document.getElementById(elemNodeId);
+                    //设置变量保存所有子元素
+                    let nowElemchilds = null;
+                    //如果当前元素的 class 名不包括 show
+                    if(nowElem.className.indexOf("show") === -1){
+                        //就获取当前元素的所有兄弟元素，清空 class 名 show
+                        nowElemchilds = nowElem.parentNode.children;
+                        for(el of nowElemchilds){
+                            el.className = "btn";
+                        }
+                        //对当前元素添加 class 名 show
+                        nowElem.className = "btn show";
+                    }
+                }
+
+                //声明需要使用的变量
+                let node = e.target;//当前实际点击的元素
+                let cla = null;//元素class名
+                let elemNode = null;//需要获取的元素
+                //判断用户点击的元素改变显示菜单，因为 e.target 获取的元素并不是我们想要的，需要二次判断
+                if(node.nodeName === "FONT"){
+                    elemNode = node.parentNode.parentNode;
+                    cla = elemNode.className.slice(elemNode.className.lastIndexOf(" ")+1);
+                    show(cla);
+                }else{
+                    elemNode = node;
+                    cla = elemNode.className.slice(elemNode.className.lastIndexOf(" ")+1);
+                    show(cla);
+                }
+            };
+
+            //设置变量保存判断用户执行事件，以免onclick和onmouseup事件混淆
+            let up = false;
+            //实现点击箭头收起或现实菜单
+            document.getElementById("arrowhead").onclick = function(){
+                let Case = document.getElementsByClassName("butCase")[0];
+                //判断元素是否需要添加class名
+                if(Case.className.indexOf("hidden") === -1 && !up){
+                    Case.classList.add("hidden");
+                    this.style.background = "url('arrowLeft.png')";
+                }else if(Case.className.indexOf("hidden") !== -1 && !up){
+                    Case.classList.remove("hidden");
+                    this.style.background = "url('arrowRight.png')";
+                }
+                up = false;
+            };
+
+            //创建变量保存定时器
+            let timeOne = null;//是否启动定时器
+            let timeTwo = null;//执行定时器
+            let drafting = document.getElementById("arrowhead");
+            //设置全局变量
+            // let offsetY,offsetX;
+            let draftingTrue = false;//声明变量监控是否启用拖拽事件
+            //需要拖拽的元素
+            let draftingElement = document.getElementsByClassName("butCase")[0];
+
+            let offsetY,offsetX;
+
+            //实现拿起效果
+            drafting.onmousedown = function(e){
+                timeOne = setTimeout(()=>{
+                    timeTwo = setTimeout(()=>{
+                        //元素拿起特效（阴影）
+                        this.parentNode.style.boxShadow = "-10px 10px 1px 1px #eee";
+                        drafting.style.cursor = "move";
+                        //计算元素当前位置
+                        offsetY = e.pageY - this.parentNode.offsetTop;
+                        offsetX = e.pageX - this.parentNode.offsetLeft;
+                        console.log(offsetX);
+                        //元素是否可以拖动
+                        draftingTrue = true;
+                    });
+                },500);
+            };
+
+            //实现拖拽效果
+            document.onmousemove = function(e){
+                //当前鼠标坐标X,Y轴
+                let mouseX = e.pageX;
+                let mouseY = e.pageY;
+                //元素移动的距离
+                let moveX = 0;
+                let moveY = 0;
+                if(draftingTrue){
+                    //计算元素移动距离
+                    moveX = mouseX - offsetX;
+                    moveY = mouseY - offsetY;
+
+                    //对元素位置进行更新
+                    draftingElement.style.left = moveX+"px";
+                    draftingElement.style.top = moveY+"px";
+                }
+            };
+
+            //实现放下效果
+            document.onmouseup = function(){
+                //元素放下特效（取消阴影）
+                draftingElement.style.boxShadow = "0 0 0 0 #eee";
+                //停止定时器，并重新赋值为null
+                clearTimeout(timeOne);
+                timeOne = null;
+                //如果条件符合就清空第二个定时器，并开启元素收起特效
+                if(timeTwo !== null){
+                    clearTimeout(timeTwo);
+                    timeTwo = null;
+                    up = true;
+                    drafting.style.cursor = "pointer";
+                    draftingTrue = false;
+                }
+            };
+        })()
+    </script>
+</body>
+</html>
